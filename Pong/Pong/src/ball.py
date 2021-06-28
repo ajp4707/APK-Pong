@@ -7,7 +7,7 @@ SPEEDUPCTR = 4  # starting counter; number of paddle hits or collisions before s
 
 BOUNCE_RANGE = 120  # 120 degree range. 60 degrees up, or 60 degrees down
 
-POSSIBLE_STARTING_ANGLES = [0, 180, 45, 135, 225, 315]
+POSSIBLE_STARTING_ANGLES = [0,  45, 315, 135, 180, 225]
 #POSSIBLE_STARTING_ANGLES = [0]
 
 
@@ -130,3 +130,14 @@ class Ball(pygame.sprite.Sprite):
             self.angle = (BOUNCE_RANGE * (1-collision_percentile) + (180 - BOUNCE_RANGE/2) + randomness) % 360 # += randint(-1,1)
 
         return collision_percentile
+
+    def startAngle(self):
+        self.angle = choice(POSSIBLE_STARTING_ANGLES)
+
+    # -- Sets the angle of the ball to inital serve position. Called by main. 
+    # @param leftServe boolean of if Left is serving (ball will go right)
+    def serve(self, leftServe):
+        if leftServe:
+            self.angle = choice(POSSIBLE_STARTING_ANGLES[0:3])
+        else:
+            self.angle = choice(POSSIBLE_STARTING_ANGLES[3:])

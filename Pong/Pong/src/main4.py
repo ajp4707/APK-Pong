@@ -10,11 +10,18 @@ from ball import Ball
 from data_tracker import dataTracker #additional item/function added to track all relevant information during game.
 from game_tracker import GameTracker
 
+# Setting up constants
+SCREENW = 1050
+SCREENH = 750
+PADW = 15
+PADH = 75
+
+
 # Setting up globals
 joys = [] # joystick tracker
 FPS = 60 # FPS for the game
 #SIZE = (1050, 750) #width, height - Screensize
-SIZE = (1050, 750) #width, height - Screensize
+SIZE = (SCREENW, SCREENH) #width, height - Screensize
 BLACK = (0,0,0)
 WHITE = (255,255,255)
 screen = None # pygame screen
@@ -22,10 +29,17 @@ paddleA = None # Left Paddle
 paddleB = None # Right Paddle
 ball = None # the ball
 
+
 # updated to show the change in range for a smaller paddle** 
 def adjustJoystick(y, range=675): # how far paddle can move, math will need to change if paddle shrinks (e.g. smaller paddle range= 700)
     y = y * (range/2) + (range/2) # translates (-1,1) range to (0,675) pixel location
     return y
+
+# reset's ball after a point is scored
+def resetBallPos():
+    global SCREENH, SCREENW, WHITE, ball
+    ball.rect.centerx = SCREENW // 2 # starting location x
+    ball.rect.centery = SCREENH // 2
 
 #opens game in center of screen consistently
 os.environ['SDL_VIDEO_CENTERED'] = '1'
@@ -36,19 +50,20 @@ pygame.init()
 screen = pygame.display.set_mode(SIZE)
 pygame.display.set_caption("Pong")
 
-#paddleA = Paddle(WHITE, 15, 150) # color, width, height
-paddleA = Paddle(WHITE, 15, 75) # color, width, height
+paddleA = Paddle(WHITE, PADW, PADH) # color, width, height
 paddleA.rect.x = 0 #starting position relative to screen size, x
-paddleA.rect.y = 350 #starting position relative to size of screen, starting at y/2 more or less, y
+paddleA.rect.centery = SCREENH // 2
+# Aidan: This line ^ doesn't do anything when using joysticks because the paddles will go to joystick position
+# Aidan: Still important for keyboard controls
 
-#paddleB = Paddle(WHITE, 15, 150)
-paddleB = Paddle(WHITE, 15, 75)
-paddleB.rect.x = 1035
-paddleB.rect.y = 350
+paddleB = Paddle(WHITE, PADW, PADH)
+paddleB.rect.x = SCREENW - PADW
+# paddleB.rect.y = 350
+paddleB.rect.centery = SCREENH // 2
 
-ball = Ball(WHITE,15,15) #color, width, height of ball in px
-ball.rect.x = 375 # starting location x
-ball.rect.y = 525 
+ball = Ball(WHITE,15,15)
+resetBallPos()
+
 
 #This will be a list that will contain all the sprites we intend to use in our game.
 all_sprites_list = pygame.sprite.Group()
@@ -69,52 +84,76 @@ clock = pygame.time.Clock()
 scoreA = 0
 scoreB = 0
 
-# Initialize data tracker
-tracker = dataTracker(time())
-game_tracker = GameTracker(time()) #does this belong here?
-
-
-# Initialize the game
+# -- Initialize the game
 joys = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
 joys = list(filter(lambda j: 'paddle' in j.get_name().lower(), joys))
 for j in joys:
     j.init()
 
-pygame.event.pump()
-screen.fill(BLACK)
 myfont = pygame.font.SysFont(pygame.font.get_default_font(),int(SIZE[1]/10.))
+pygame.event.pump()
+
+# -- First screen, tap buttons to play
+screen.fill(BLACK)
 text = myfont.render("Press both paddle buttons to start", True, WHITE) # players can initiate game together
-textRect = text.get_rect()
-textRect.center = (SIZE[0]//2,SIZE[1]//2)
-screen.blit(text, textRect)
+textrect = text.get_rect()
+textrect.center = (SIZE[0]//2,SIZE[1]//2)
+screen.blit(text, textrect)
 pygame.display.flip()
-readyToStart = False
-while not readyToStart:
+page1 = True
+while page1:
     for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            carryOn = False
+            page1 = False
         if event.type == pygame.JOYBUTTONDOWN:
             if joys[0].get_button(0) is 1 and joys[1].get_button(0) is 1:
-                readyToStart = True
+                page1 = False
+        if event.type == pygame.KEYDOWN: # -- Alternatively, if using keyboard, press "A" and "L" to begin
+            pressed = pygame.key.get_pressed()
+            if pressed[pygame.K_a] and pressed[pygame.K_l]:
+                page1 = False
 
-# Display countdown screen
-for i in range(5,0,-1):
+
+# -- display countdown screen
+countdown = carryOn
+countfrom = 2
+tick = 0
+while countdown:
+    for event in pygame.event.get(): 
+        if event.type == pygame.QUIT: 
+              carryOn = False
+              countdown = False
     screen.fill(BLACK)
-    text = myfont.render(str(i), True, WHITE)
-    textRect = text.get_rect()
-    textRect.center = (SIZE[0]//2,SIZE[1]//2)
-    screen.blit(text, textRect)
-    pygame.display.flip()
-    sleep(1)
-screen.fill(BLACK)
-text = myfont.render('GO!', True, WHITE)
-textRect = text.get_rect()
-textRect.center = (SIZE[0]//2,SIZE[1]//2)
-screen.blit(text, textRect)
-pygame.display.flip()
-sleep(1)
+    if tick >= (countfrom + 1) * FPS:
+        countdown = False
+        break
+    elif tick >= countfrom * FPS:
+        text = myfont.render('Go!', True, WHITE)
+    else:
+        num = countfrom - tick//FPS
+        text = myfont.render(str(num), True, WHITE)
 
+    textrect = text.get_rect()
+    textrect.center = (SIZE[0]//2,SIZE[1]//2)
+    screen.blit(text, textrect)
+    pygame.display.flip()
+    tick = tick + 1
+    clock.tick(FPS)
+
+# -- Initialize data tracker
+tracker = dataTracker(time())
+game_tracker = GameTracker(time())
 endTime = time() + 185 # can update in seconds of time (just over 3 minutes)
 
 # -------- Main Program Loop -----------
+scoreReset = False
+scorePause = False
+servePause = True
+leftServe = True
+tick = 0
+pauseLength = 1.5 # in seconds
+round = 0
 while carryOn:
     if time() > endTime:
         break
@@ -131,6 +170,31 @@ while carryOn:
 
     if paused: # allows us to pause the game using Y key.
         continue
+    elif scorePause: # pauses the screen immediately after the serve
+        tick = tick + 1
+        if tick >= FPS * pauseLength:
+            tick = 0
+            scorePause = False
+            servePause = True
+            resetBallPos()
+        clock.tick(FPS)
+        continue
+    
+    if round >= 5:
+        leftServe = not leftServe
+        round = 0
+
+    if servePause:
+        ball.velocity = 0
+        tick = tick + 1
+        if tick >= FPS * pauseLength:
+            ball.resetSpeed()
+            ball.serve(leftServe)
+            tick = 0
+            # serve event to csv? --------------- Aidan to implement
+            servePause = False
+            print("Speed is back to normal")
+
 
     #Moving the paddles when the use uses "R/D" (player A) or "P/L" keys (player B) by 7.5 pixels.
     keys = pygame.key.get_pressed()
@@ -162,17 +226,19 @@ while carryOn:
     #Check if the ball is bouncing against any of the 4 walls:
     if ball.rect.x >= 1035: # if ball hits Rside of screen
         if not pygame.sprite.collide_mask(ball, paddleB): #and also is not hitting the paddle
+            scorePause = True
             scoreA += 1
+            round += 1
             ball.rect.x = 1035
             ball.collideVertical()
-            ball.resetSpeed()
             tracker.wall_right(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
-    if ball.rect.x <= 5: # Lside of screen
+    if ball.rect.x <= 0: # Lside of screen
         if not pygame.sprite.collide_mask(ball, paddleA):
+            scorePause = True
             scoreB += 1
-            ball.rect.x = 5
+            round += 1
+            ball.rect.x = 0
             ball.collideVertical()
-            ball.resetSpeed()
             tracker.wall_left(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
     if ball.rect.y >= 735: # if the boundary of the screen is hit -- the bottom of the screen
         ball.rect.y = 735
@@ -210,7 +276,7 @@ while carryOn:
     # First, clear the screen to black.
     screen.fill(BLACK)
     #Draw the net
-    pygame.draw.line(screen, WHITE, [530, 0], [530, 750], 15) #changing from  [349, 0], [349, 500], 5
+    pygame.draw.line(screen, (180, 180, 180), [525, 0], [525, 750], 13) #changing from  [349, 0], [349, 500], 5
 
     #Now let's draw all the sprites in one go. (For now we only have 3 sprites!)
     all_sprites_list.draw(screen)
