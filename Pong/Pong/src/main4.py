@@ -15,7 +15,8 @@ SCREENW = 1050
 SCREENH = 750
 PADW = 15
 PADH = 75
-
+BALLW = 15
+BALLH = 15
 
 # Setting up globals
 joys = [] # joystick tracker
@@ -28,7 +29,6 @@ screen = None # pygame screen
 paddleA = None # Left Paddle
 paddleB = None # Right Paddle
 ball = None # the ball
-
 
 # updated to show the change in range for a smaller paddle** 
 def adjustJoystick(y, range=675): # how far paddle can move, math will need to change if paddle shrinks (e.g. smaller paddle range= 700)
@@ -61,7 +61,7 @@ paddleB.rect.x = SCREENW - PADW
 # paddleB.rect.y = 350
 paddleB.rect.centery = SCREENH // 2
 
-ball = Ball(WHITE,15,15)
+ball = Ball(WHITE, BALLW, BALLH)
 resetBallPos()
 
 
@@ -114,10 +114,9 @@ while page1:
             if pressed[pygame.K_a] and pressed[pygame.K_l]:
                 page1 = False
 
-
 # -- display countdown screen
 countdown = carryOn
-countfrom = 2
+countfrom = 5
 tick = 0
 while countdown:
     for event in pygame.event.get(): 
@@ -147,16 +146,18 @@ game_tracker = GameTracker(time())
 endTime = time() + 185 # can update in seconds of time (just over 3 minutes)
 
 # -------- Main Program Loop -----------
-scoreReset = False
+scoreEvent = True
 scorePause = False
 servePause = True
 leftServe = True
 tick = 0
 pauseLength = 1.5 # in seconds
 round = 0
+winByTwo = False
+winScore = 21
 while carryOn:
-    if time() > endTime:
-        break
+    # if time() > endTime:
+        # break
     # --- Main event loop
     for event in pygame.event.get(): # User did something
         if event.type == pygame.QUIT: # If user clicked close
@@ -170,31 +171,37 @@ while carryOn:
 
     if paused: # allows us to pause the game using Y key.
         continue
-    elif scorePause: # pauses the screen immediately after the serve
-        tick = tick + 1
-        if tick >= FPS * pauseLength:
-            tick = 0
-            scorePause = False
-            servePause = True
-            resetBallPos()
-        clock.tick(FPS)
-        continue
+    if scoreEvent:
+        if scorePause: # pauses the screen immediately after the serve
+            tick = tick + 1
+            if tick >= FPS * pauseLength:
+                tick = 0
+                scorePause = False
+                servePause = True
+                resetBallPos()
+            clock.tick(FPS)
+            continue
     
-    if round >= 5:
-        leftServe = not leftServe
-        round = 0
+        if round >= 5: # alternates who serves every 5 rounds
+            leftServe = not leftServe
+            round = 0
 
-    if servePause:
-        ball.velocity = 0
-        tick = tick + 1
-        if tick >= FPS * pauseLength:
-            ball.resetSpeed()
-            ball.serve(leftServe)
-            tick = 0
-            # serve event to csv? --------------- Aidan to implement
-            servePause = False
-            print("Speed is back to normal")
-
+        if (scoreA >= winScore or scoreB >= winScore):
+            if abs(scoreA-scoreB) < 2:   # win by 2 condition
+                winByTwo = True
+            else:
+                carryOn = False
+    
+        if servePause:
+            ball.velocity = 0
+            tick = tick + 1
+            if tick >= FPS * pauseLength:
+                ball.resetSpeed()
+                ball.serve(leftServe)
+                tick = 0
+                # serve event to csv? --------------- Aidan to implement
+                scoreEvent = servePause = False
+                winByTwo = False
 
     #Moving the paddles when the use uses "R/D" (player A) or "P/L" keys (player B) by 7.5 pixels.
     keys = pygame.key.get_pressed()
@@ -224,24 +231,28 @@ while carryOn:
     
     
     #Check if the ball is bouncing against any of the 4 walls:
-    if ball.rect.x >= 1035: # if ball hits Rside of screen
+    #if ball.rect.x >= 1035: # if ball hits Rside of screen
+    if ball.rect.x >= SCREENW-BALLW:
         if not pygame.sprite.collide_mask(ball, paddleB): #and also is not hitting the paddle
-            scorePause = True
+            scoreEvent = scorePause = True
             scoreA += 1
             round += 1
-            ball.rect.x = 1035
+            #ball.rect.x = 1035
+            ball.rect.x = SCREENW-BALLW
             ball.collideVertical()
             tracker.wall_right(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
     if ball.rect.x <= 0: # Lside of screen
         if not pygame.sprite.collide_mask(ball, paddleA):
-            scorePause = True
+            scoreEvent = scorePause = True
             scoreB += 1
             round += 1
             ball.rect.x = 0
             ball.collideVertical()
             tracker.wall_left(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
-    if ball.rect.y >= 735: # if the boundary of the screen is hit -- the bottom of the screen
-        ball.rect.y = 735
+    #if ball.rect.y >= 735: # if the boundary of the screen is hit -- the bottom of the screen
+    if ball.rect.y >= SCREENH-BALLH:
+        #ball.rect.y = 735
+        ball.rect.y = SCREENH-BALLH
         ball.collideHorizontal()
         # ball.speedUpCondition() # place here to include in bounce count
         # tracker.wall_top(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
@@ -261,13 +272,15 @@ while carryOn:
     if pygame.sprite.collide_mask(ball, paddleA):
         ball.speedUpCondition()  # detect collisions for counter
         collision_percentile = ball.bounce(paddleA)
-        ball.rect.x = 18  # keep from getting stuck on the paddle
+        #ball.rect.x = 18  # keep from getting stuck on the paddle
+        ball.rect.x = PADW + 3
         # ball.collision_percentile(paddleA)
         tracker.paddle_left(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y, collision_percentile)
     if pygame.sprite.collide_mask(ball, paddleB):
         ball.speedUpCondition()  # detecting collisions for counter
         collision_percentile = ball.bounce(paddleB)
-        ball.rect.x = 1017  # prevent sticking to paddleB
+        # ball.rect.x = 1017  # prevent sticking to paddleB
+        ball.rect.x = SCREENW - PADW - BALLW - 3
         # ball.collision_percentile(paddleB)
         tracker.paddle_right(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y, collision_percentile) #or 
 
@@ -276,7 +289,8 @@ while carryOn:
     # First, clear the screen to black.
     screen.fill(BLACK)
     #Draw the net
-    pygame.draw.line(screen, (180, 180, 180), [525, 0], [525, 750], 13) #changing from  [349, 0], [349, 500], 5
+    #pygame.draw.line(screen, (150, 150, 150), [525, 0], [525, 750], 13) #changing from  [349, 0], [349, 500], 5
+    pygame.draw.line(screen, (150, 150, 150), [SCREENW//2, 0], [SCREENW//2, SCREENH], 13)
 
     #Now let's draw all the sprites in one go. (For now we only have 3 sprites!)
     all_sprites_list.draw(screen)
@@ -295,6 +309,11 @@ while carryOn:
     #text = font.render(str(scoreA+scoreB), 1, WHITE)
     #screen.blit(text, (420,10))
 
+    # -- Display "win by two" message
+    if winByTwo: 
+        text = font.render("Win by 2!", 1, WHITE)
+        screen.blit(text, ((SCREENW - text.get_width()) // 2, SCREENH // 4) )
+
     # --- Go ahead and update the screen with what we've drawn.
     pygame.display.flip()
 
@@ -304,6 +323,32 @@ while carryOn:
 #Once we have exited the main program loop we can stop the game engine:
 tracker.finalize()
 #game_tracker.finalize()
+
+# -- Display winner screen
+displayLoop = True
+winnerTxt = " wins!"
+if scoreA > scoreB:
+    winnerTxt = "Left" + winnerTxt
+else:
+    winnerTxt = "Right" + winnerTxt
+while displayLoop:
+    for event in pygame.event.get(): 
+        if event.type == pygame.QUIT: 
+            displayLoop = False
+        elif event.type==pygame.KEYDOWN:
+            displayLoop = False
+        elif event.type == pygame.JOYBUTTONDOWN:
+            displayLoop = False
+    screen.fill(BLACK)
+    font = pygame.font.Font(None, 120)
+    text = font.render(winnerTxt, 1, WHITE)
+    screen.blit(text, ((SCREENW - text.get_width()) // 2, SCREENH // 3) )
+    text = font.render(str(scoreA), 1, WHITE)
+    screen.blit(text, (SCREENW//3 - text.get_width()//2, 2 * SCREENH//3))
+    text = font.render(str(scoreB), 1, WHITE)
+    screen.blit(text, (2 * SCREENW//3 - text.get_width()//2, 2 * SCREENH//3))
+    pygame.display.flip()
+
 pygame.quit()
 
 
