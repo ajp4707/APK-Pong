@@ -33,7 +33,6 @@ class MainWindow:
     def initPeripherals(self):
         # initialize clock, font, and joysticks
         self.clock = pygame.time.Clock()
-        self.myfont = pygame.font.SysFont(pygame.font.get_default_font(),int(SIZE[1]/10.))
         self.joys = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
         self.joys = list(filter(lambda j: 'paddle' in j.get_name().lower(), self.joys))
         if len(self.joys) < 2:
@@ -53,7 +52,8 @@ class MainWindow:
 
     def startPage(self):
         self.screen.fill(BLACK)
-        text = self.myfont.render("Press both paddle buttons to start", True, WHITE) # players can initiate game together
+        font = pygame.font.SysFont(pygame.font.get_default_font(),int(SIZE[1]/10.))
+        text = font.render("Press both paddle buttons to start", True, WHITE) # players can initiate game together
         textrect = text.get_rect()
         textrect.center = (SIZE[0]//2,SIZE[1]//2)
         self.screen.blit(text, textrect)
@@ -72,6 +72,7 @@ class MainWindow:
                     if pressed[pygame.K_a] and pressed[pygame.K_l]:
                         loop = False
     def countPage(self):
+        font = pygame.font.SysFont(pygame.font.get_default_font(),int(SIZE[1]/10.))
         loop = True
         tick = 0
         while loop:
@@ -84,10 +85,10 @@ class MainWindow:
                 loop = False
                 break
             elif tick >= COUNTFROM * FPS:
-                text = self.myfont.render('Go!', True, WHITE)
+                text = font.render('Go!', True, WHITE)
             else:
                 num = COUNTFROM - tick//FPS
-                text = self.myfont.render(str(num), True, WHITE)
+                text = font.render(str(num), True, WHITE)
 
             textrect = text.get_rect()
             textrect.center = (SIZE[0]//2,SIZE[1]//2)
@@ -152,7 +153,7 @@ class MainWindow:
                     self.clock.tick(FPS)
                     continue
     
-                if round >= 5: # alternates who serves every 5 rounds
+                if round >= SWITCHROUNDS: # alternates who serves every SWITCHROUNDS rounds
                     leftServe = not leftServe
                     round = 0
 
@@ -284,15 +285,15 @@ class MainWindow:
                     loop = False
                 elif event.type == pygame.JOYBUTTONDOWN:
                     loop = False
-            screen.fill(BLACK)
+            self.screen.fill(BLACK)
             font = pygame.font.Font(None, 120)
             text = font.render(winnerTxt, 1, WHITE)
-            screen.blit(text, ((SCREENW - text.get_width()) // 2, SCREENH // 3) )
-            text = font.render(str(scoreA), 1, WHITE)
-            screen.blit(text, (SCREENW//3 - text.get_width()//2, 2 * SCREENH//3))
-            text = font.render(str(scoreB), 1, WHITE)
-            screen.blit(text, (2 * SCREENW//3 - text.get_width()//2, 2 * SCREENH//3))
+            self.screen.blit(text, ((SCREENW - text.get_width()) // 2, SCREENH // 3) )
+            text = font.render(str(self.scoreA), 1, WHITE)
+            self.screen.blit(text, (SCREENW//3 - text.get_width()//2, 2 * SCREENH//3))
+            text = font.render(str(self.scoreB), 1, WHITE)
+            self.screen.blit(text, (2 * SCREENW//3 - text.get_width()//2, 2 * SCREENH//3))
             pygame.display.flip()
-            clock.tick(FPS)
+            self.clock.tick(FPS)
 
 
