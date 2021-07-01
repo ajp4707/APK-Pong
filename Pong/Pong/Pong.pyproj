@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>61f09558-7ed8-4a67-9fc6-bd7f4d4f3f8f</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>src\main4.py</StartupFile>
+    <StartupFile>runGame.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -26,16 +26,27 @@
     <Folder Include="src\" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="runGame.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="src\ball.py" />
+    <Compile Include="src\config.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="src\data_tracker.py" />
     <Compile Include="src\game_tracker.py" />
     <Compile Include="src\main4.py" />
+    <Compile Include="src\window.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="src\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="src\paddle.py" />
     <Compile Include="src\setup.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="src\save_things.bat" />
-    <Content Include="src\test.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

@@ -28,7 +28,7 @@ class Ball(pygame.sprite.Sprite):
 
         self.velocity = 9  # distance it can move per frame, in pixels
         # self.max_vel = 16
-        self.angle = choice(POSSIBLE_STARTING_ANGLES)  # current traveling angle
+        self.angle = self.startAngle()  # current traveling angle
         self.speedUpCtr = SPEEDUPCTR  # number of paddle hits or collisions before speed increases the first time.
 
         self._original_velocity = self.velocity
@@ -53,8 +53,9 @@ class Ball(pygame.sprite.Sprite):
         """
         Called once per frame - handles moving of self.rect's position
         """
-        self.rect.x += cos(radians(self.angle)) * self.velocity
-        self.rect.y += sin(radians(self.angle)) * self.velocity
+        #self.rect.centerx += cos(radians(self.angle)) * self.velocity
+        self.rect.centerx += ( cos(radians(self.angle)) * self.velocity + 0.5 ) // 1
+        self.rect.centery += ( sin(radians(self.angle)) * self.velocity + 0.5 ) // 1
 
         return
 
@@ -132,7 +133,7 @@ class Ball(pygame.sprite.Sprite):
         return collision_percentile
 
     def startAngle(self):
-        self.angle = choice(POSSIBLE_STARTING_ANGLES)
+        return choice(POSSIBLE_STARTING_ANGLES)
 
     # -- Sets the angle of the ball to inital serve position. Called by main. 
     # @param leftServe boolean of if Left is serving (ball will go right)
@@ -141,3 +142,8 @@ class Ball(pygame.sprite.Sprite):
             self.angle = choice(POSSIBLE_STARTING_ANGLES[0:3])
         else:
             self.angle = choice(POSSIBLE_STARTING_ANGLES[3:])
+    
+    def returnToCenter(self, sizeTuple):
+        width, height = sizeTuple
+        self.rect.centerx = width // 2 # starting location x
+        self.rect.centery = height // 2

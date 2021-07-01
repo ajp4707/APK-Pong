@@ -32,3 +32,21 @@ class Paddle(pygame.sprite.Sprite):
         #Check that you are not going too far (off the screen)
         if self.rect.y > 600: #bottom of the screen
             self.rect.y = 600
+
+    def adjustJoystick(self, joyInput, screenH): # called by main, should only be used with joysticks
+        range = screenH - self.height
+        self.rect.y = joyInput * (range/2) + (range/2) # translates (-1,1) range to (0,675) pixel location
+
+class PaddleLeft(Paddle):
+    def __init__(self, color, width, height, screenSizeTuple):
+        super().__init__(color, width, height)
+        screenW, screenH = screenSizeTuple
+        self.rect.x = 0
+        self.rect.centery = screenH // 2
+
+class PaddleRight(Paddle):
+    def __init__(self, color, width, height, screenSizeTuple):
+        super().__init__(color, width, height)
+        screenW, screenH = screenSizeTuple
+        self.rect.x = screenW - width
+        self.rect.centery = screenH // 2

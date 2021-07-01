@@ -1,4 +1,7 @@
 ## CHANGES FOR SMALLER PADDLES. what if it is full screen, will that even work if the velocity maxes out?
+# Aidan: Possible improvements
+# Resizable window
+# wait for joystick
 
 # Import the pygame library and initialise the game engine
 import pygame
@@ -10,45 +13,79 @@ from ball import Ball
 from data_tracker import dataTracker #additional item/function added to track all relevant information during game.
 from game_tracker import GameTracker
 
-# Setting up constants
-SCREENW = 1050
-SCREENH = 750
-PADW = 15
-PADH = 75
-BALLW = 15
-BALLH = 15
+from config import *
 
 # Setting up globals
 joys = [] # joystick tracker
-FPS = 60 # FPS for the game
-#SIZE = (1050, 750) #width, height - Screensize
-SIZE = (SCREENW, SCREENH) #width, height - Screensize
-BLACK = (0,0,0)
-WHITE = (255,255,255)
 screen = None # pygame screen
 paddleA = None # Left Paddle
 paddleB = None # Right Paddle
 ball = None # the ball
 
-# updated to show the change in range for a smaller paddle** 
-def adjustJoystick(y, range=675): # how far paddle can move, math will need to change if paddle shrinks (e.g. smaller paddle range= 700)
-    y = y * (range/2) + (range/2) # translates (-1,1) range to (0,675) pixel location
-    return y
-
-# reset's ball after a point is scored
-def resetBallPos():
-    global SCREENH, SCREENW, WHITE, ball
-    ball.rect.centerx = SCREENW // 2 # starting location x
-    ball.rect.centery = SCREENH // 2
-
-#opens game in center of screen consistently
+#opens game in center of screen consistently # this line stays in main
 os.environ['SDL_VIDEO_CENTERED'] = '1'
-
 pygame.init()
+pygame.event.pump()
+
+# The clock will be used to control how fast the screen updates
+clock = pygame.time.Clock()
+
+# -- Initialize joystick inputs
+joys = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
+joys = list(filter(lambda j: 'paddle' in j.get_name().lower(), joys))
+for j in joys:
+    j.init()
 
 # Open a new window
 screen = pygame.display.set_mode(SIZE)
 pygame.display.set_caption("Pong")
+
+nextPage = True # Indicates to move onto the next page. Turns false if Pygame.QUIT is called
+
+# -- "Tap buttons to play" start page
+myfont = pygame.font.SysFont(pygame.font.get_default_font(),int(SIZE[1]/10.))
+screen.fill(BLACK)
+text = myfont.render("Press both paddle buttons to start", True, WHITE) # players can initiate game together
+textrect = text.get_rect()
+textrect.center = (SIZE[0]//2,SIZE[1]//2)
+screen.blit(text, textrect)
+pygame.display.flip()
+startPage = True
+while startPage and nextPage:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            nextPage = False
+        if event.type == pygame.JOYBUTTONDOWN:
+            if joys[0].get_button(0) is 1 and joys[1].get_button(0) is 1:
+                startPage = False
+        if event.type == pygame.KEYDOWN: # -- Alternatively, if using keyboard, press "A" and "L" to begin
+            pressed = pygame.key.get_pressed()
+            if pressed[pygame.K_a] and pressed[pygame.K_l]:
+                startPage = False
+
+# -- Countdown page
+countPage = nextPage
+tick = 0
+while countPage and nextPage:
+    for event in pygame.event.get(): 
+        if event.type == pygame.QUIT: 
+              nextPage = False
+    screen.fill(BLACK)
+    if tick >= (COUNTFROM + 1) * FPS:
+        countPage = False
+        break
+    elif tick >= COUNTFROM * FPS:
+        text = myfont.render('Go!', True, WHITE)
+    else:
+        num = COUNTFROM - tick//FPS
+        text = myfont.render(str(num), True, WHITE)
+
+    textrect = text.get_rect()
+    textrect.center = (SIZE[0]//2,SIZE[1]//2)
+    screen.blit(text, textrect)
+    pygame.display.flip()
+    tick = tick + 1
+    clock.tick(FPS)
 
 paddleA = Paddle(WHITE, PADW, PADH) # color, width, height
 paddleA.rect.x = 0 #starting position relative to screen size, x
@@ -62,8 +99,7 @@ paddleB.rect.x = SCREENW - PADW
 paddleB.rect.centery = SCREENH // 2
 
 ball = Ball(WHITE, BALLW, BALLH)
-resetBallPos()
-
+ball.returnToCenter(SIZE)
 
 #This will be a list that will contain all the sprites we intend to use in our game.
 all_sprites_list = pygame.sprite.Group()
@@ -77,91 +113,31 @@ all_sprites_list.add(ball)
 carryOn = True
 paused = False
 
-# The clock will be used to control how fast the screen updates
-clock = pygame.time.Clock()
-
 #Initialize player scores
 scoreA = 0
 scoreB = 0
 
-# -- Initialize the game
-joys = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
-joys = list(filter(lambda j: 'paddle' in j.get_name().lower(), joys))
-for j in joys:
-    j.init()
-
-myfont = pygame.font.SysFont(pygame.font.get_default_font(),int(SIZE[1]/10.))
-pygame.event.pump()
-
-# -- First screen, tap buttons to play
-screen.fill(BLACK)
-text = myfont.render("Press both paddle buttons to start", True, WHITE) # players can initiate game together
-textrect = text.get_rect()
-textrect.center = (SIZE[0]//2,SIZE[1]//2)
-screen.blit(text, textrect)
-pygame.display.flip()
-page1 = True
-while page1:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            carryOn = False
-            page1 = False
-        if event.type == pygame.JOYBUTTONDOWN:
-            if joys[0].get_button(0) is 1 and joys[1].get_button(0) is 1:
-                page1 = False
-        if event.type == pygame.KEYDOWN: # -- Alternatively, if using keyboard, press "A" and "L" to begin
-            pressed = pygame.key.get_pressed()
-            if pressed[pygame.K_a] and pressed[pygame.K_l]:
-                page1 = False
-
-# -- display countdown screen
-countdown = carryOn
-countfrom = 5
-tick = 0
-while countdown:
-    for event in pygame.event.get(): 
-        if event.type == pygame.QUIT: 
-              carryOn = False
-              countdown = False
-    screen.fill(BLACK)
-    if tick >= (countfrom + 1) * FPS:
-        countdown = False
-        break
-    elif tick >= countfrom * FPS:
-        text = myfont.render('Go!', True, WHITE)
-    else:
-        num = countfrom - tick//FPS
-        text = myfont.render(str(num), True, WHITE)
-
-    textrect = text.get_rect()
-    textrect.center = (SIZE[0]//2,SIZE[1]//2)
-    screen.blit(text, textrect)
-    pygame.display.flip()
-    tick = tick + 1
-    clock.tick(FPS)
-
 # -- Initialize data tracker
 tracker = dataTracker(time())
 game_tracker = GameTracker(time())
-endTime = time() + 185 # can update in seconds of time (just over 3 minutes)
+endTime = time() + MAXTIME # can update in seconds of time (just over 3 minutes)
 
-# -------- Main Program Loop -----------
+# -------- Main Game Loop -----------
 scoreEvent = True
 scorePause = False
 servePause = True
 leftServe = True
 tick = 0
-pauseLength = 1.5 # in seconds
 round = 0
 winByTwo = False
-winScore = 21
-while carryOn:
+
+while carryOn and nextPage:
     # if time() > endTime:
         # break
     # --- Main event loop
     for event in pygame.event.get(): # User did something
         if event.type == pygame.QUIT: # If user clicked close
-              carryOn = False # Flag that we are done so we exit this loop
+              nextPage = False 
         elif event.type==pygame.KEYDOWN:
                 if event.key==pygame.K_v: #Pressing the v Key will quit the game
                      carryOn=False
@@ -174,11 +150,11 @@ while carryOn:
     if scoreEvent:
         if scorePause: # pauses the screen immediately after the serve
             tick = tick + 1
-            if tick >= FPS * pauseLength:
+            if tick >= FPS * PAUSELENGTH:
                 tick = 0
                 scorePause = False
                 servePause = True
-                resetBallPos()
+                ball.returnToCenter(SIZE)
             clock.tick(FPS)
             continue
     
@@ -186,7 +162,7 @@ while carryOn:
             leftServe = not leftServe
             round = 0
 
-        if (scoreA >= winScore or scoreB >= winScore):
+        if (scoreA >= WINSCORE or scoreB >= WINSCORE):
             if abs(scoreA-scoreB) < 2:   # win by 2 condition
                 winByTwo = True
             else:
@@ -195,7 +171,7 @@ while carryOn:
         if servePause:
             ball.velocity = 0
             tick = tick + 1
-            if tick >= FPS * pauseLength:
+            if tick >= FPS * PAUSELENGTH:
                 ball.resetSpeed()
                 ball.serve(leftServe)
                 tick = 0
@@ -219,8 +195,8 @@ while carryOn:
         
     # if keys[pygame.K_KP5]:
     #     ball.override()
-    paddleA.rect.y = adjustJoystick(joys[0].get_axis(0))
-    paddleB.rect.y = adjustJoystick(joys[1].get_axis(0))
+    paddleA.adjustJoystick(joys[0].get_axis(0), SCREENH)
+    paddleB.adjustJoystick(joys[1].get_axis(0), SCREENH)
 
     # --- Game logic should go here
     all_sprites_list.update()
@@ -320,25 +296,28 @@ while carryOn:
     # --- Limit to 60 frames per second
     clock.tick(FPS)
 
-#Once we have exited the main program loop we can stop the game engine:
+# -- finalize CSV readings
 tracker.finalize()
 #game_tracker.finalize()
 
 # -- Display winner screen
-displayLoop = True
-winnerTxt = " wins!"
-if scoreA > scoreB:
-    winnerTxt = "Left" + winnerTxt
-else:
-    winnerTxt = "Right" + winnerTxt
-while displayLoop:
+displayPage = True
+if nextPage:
+    winnerTxt = ""
+    if scoreA > scoreB:
+        winnerTxt = "Left wins!"
+    elif scoreB > scoreA:
+        winnerTxt = "Right wins!"
+    else:
+        winnerTxt = "Tie game!"
+while displayPage and nextPage:
     for event in pygame.event.get(): 
         if event.type == pygame.QUIT: 
-            displayLoop = False
+            nextPage = False
         elif event.type==pygame.KEYDOWN:
-            displayLoop = False
+            displayPage = False
         elif event.type == pygame.JOYBUTTONDOWN:
-            displayLoop = False
+            displayPage = False
     screen.fill(BLACK)
     font = pygame.font.Font(None, 120)
     text = font.render(winnerTxt, 1, WHITE)
@@ -348,6 +327,7 @@ while displayLoop:
     text = font.render(str(scoreB), 1, WHITE)
     screen.blit(text, (2 * SCREENW//3 - text.get_width()//2, 2 * SCREENH//3))
     pygame.display.flip()
+    clock.tick(FPS)
 
 pygame.quit()
 
