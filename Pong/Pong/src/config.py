@@ -12,7 +12,7 @@ PADH = 75
 BALLW = 15
 BALLH = 15
 FPS = 60        # FPS for the game
-WINSCORE = 3
+WINSCORE = 21
 SWITCHROUNDS = 5    # switch serves after how many rounds
 TIMELIMIT = False   
 MAXTIME = 185   # Only applied when TIMELIMIT = true

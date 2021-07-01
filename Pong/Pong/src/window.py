@@ -103,6 +103,9 @@ class MainWindow:
         tracker = dataTracker(time())
         game_tracker = GameTracker(time())
         endTime = time() + MAXTIME # can update in seconds of time (just over 3 minutes)
+        
+        # -- sync signal
+        syncCount = 0
 
         # -- game objects
         paddleA = PaddleLeft(WHITE, PADW, PADH, SIZE)
@@ -126,21 +129,28 @@ class MainWindow:
         round = 0
         winByTwo = False
         while loop:
-            # if time() > endTime:
-                # break
+            if TIMELIMIT and time() > endTime:
+                loop = False
             # --- Main event loop
-            for event in pygame.event.get(): # User did something
-                if event.type == pygame.QUIT: # If user clicked close
+            for event in pygame.event.get(): 
+                if event.type == pygame.QUIT: 
                       self.nextPage = False 
                       loop = False
                 elif event.type==pygame.KEYDOWN:
-                        if event.key==pygame.K_v: #Pressing the v Key will quit the game
+                        if event.key==pygame.K_v: # Pressing the v Key will quit the game
                              loop=False
-                        elif event.key == pygame.K_b: # pressing b will pause the game
+                        elif event.key == pygame.K_b: # Pressing b will pause the game
                             tracker.pause_toggle(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
                             paused = not paused
+                        elif event.key == pygame.K_s: # Sync signal event will go here. For now, s
+                            syncCount += 1
+                            tracker.sync_pulse(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y, syncCount)
+            
+            # update game time tracker, regardless of pauses
+            game_tracker.add_row(paddleA.rect.y, paddleB.rect.y, ball.x, ball.y, ball.angle, ball.velocity, syncCount) 
 
-            if paused: # allows us to pause the game using Y key.
+            if paused: # allows us to pause the game using p key.
+                self.clock.tick(FPS)
                 continue
             if scoreEvent:
                 if scorePause: # pauses the screen immediately after the serve
@@ -179,8 +189,6 @@ class MainWindow:
 
             # --- Game logic
             all_sprites_list.update()
-            game_tracker.add_row(paddleA.rect.y, paddleB.rect.y, ball.x, ball.y, ball.angle, ball.velocity) 
-    
     
             #Check if the ball is bouncing against any of the 4 walls:
             #if ball.rect.x >= 1035: # if ball hits Rside of screen
