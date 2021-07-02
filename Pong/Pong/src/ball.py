@@ -20,8 +20,11 @@ class Ball(pygame.sprite.Sprite):
         # Pass in the color of the car, and its x and y position, width and height.
         # Set the background color and set it to be transparent
         self.image = pygame.Surface([width, height])
+        # arbitrary background color that will not be displayed
+        # Cannot be Black because it messes with the ShadowBall
         self.image.fill(BLACK)
         self.image.set_colorkey(BLACK)
+
 
         # Draw the ball (a rectangle!)
         pygame.draw.rect(self.image, color, [0, 0, width, height])

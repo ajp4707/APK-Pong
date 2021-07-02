@@ -35,7 +35,9 @@
     </Compile>
     <Compile Include="src\data_tracker.py" />
     <Compile Include="src\game_tracker.py" />
-    <Compile Include="src\main4.py" />
+    <Compile Include="src\shadow.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="src\window.py">
       <SubType>Code</SubType>
     </Compile>

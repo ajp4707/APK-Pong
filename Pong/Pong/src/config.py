@@ -12,13 +12,13 @@ PADH = 75
 BALLW = 15
 BALLH = 15
 FPS = 60        # FPS for the game
-WINSCORE = 21
+WINSCORE = 10
 SWITCHROUNDS = 5    # switch serves after how many rounds
 TIMELIMIT = False   
 MAXTIME = 185   # Only applied when TIMELIMIT = true
 
 # Minor adjustments
 PAUSELENGTH = 1.5   # Seconds to pause after score, and before serve
-COUNTFROM = 5       # Seconds of countdown before starting game
+COUNTFROM = 0       # Seconds of countdown before starting game
 
 SIZE = (SCREENW, SCREENH)

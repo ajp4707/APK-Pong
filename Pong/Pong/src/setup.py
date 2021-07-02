@@ -20,7 +20,7 @@
 import cx_Freeze
 
 # executables = [cx_Freeze.Executable("main3.py"),  cx_Freeze.Executable("main2_coop.py")]
-executables = [cx_Freeze.Executable("main4.py")]
+executables = [cx_Freeze.Executable("../runGame.py")]
 
 cx_Freeze.setup(
     name="A bit Racey",

@@ -17,7 +17,10 @@
 
 #define NUM_EXTRA 4  // number of extra keys that emulate keyboard presses
 #if NUM_EXTRA
-const uint16 extraKeys[NUM_EXTRA] = { KEY_F1, KEY_F2, '[', ']' };
+
+// Aidan: I am changing extraKeys to press "KEY_RETURN" when the sync_pulse goes high.
+//const uint16 extraKeys[NUM_EXTRA] = { KEY_F1, KEY_F2, '[', ']' };
+const uint16 extraKeys[NUM_EXTRA] = { KEY_RETURN, KEY_F2, '[', ']' };
 #endif
 #define NUM_PADDLES 2
 #define HYSTERESIS 20 // shifts smaller than this are rejected
@@ -385,4 +388,3 @@ void loop() {
 #endif
 
 }
-

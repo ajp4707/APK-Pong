@@ -13,6 +13,7 @@ class dataTracker():
             "wall_left_impacts":[],
             "wall_right_impacts":[],
             "pause_toggled":[], 
+            "serve_event":[], 
             "sync_pulse":[],
         } #curly braces are a dictionary, ds.
 
@@ -27,6 +28,7 @@ class dataTracker():
             "wall_left_impacts":'Left_time',
             "wall_right_impacts":'Right_time',
             "pause_toggled": 'Pause_time',
+            "serve_event": 'Serve_time',
             "sync_pulse": 'Sync_time',
         }
         return dtc[ds]
@@ -40,7 +42,7 @@ class dataTracker():
 ### add in the percentile that it is hitting each time on the paddle -- add ,percentile_left, percentile_right to the end of each def and then update what is reported in the main files.
 
     def paddle_left(self, time, location, velocity, angle, paddle_left, paddle_right, collision_percentile): #pass parameter to the function, need to include what you want
-        self.ball_collision["paddle_left_impacts"].append((time - self.start_time, location, velocity, angle, paddle_left, paddle_right, collision_percentile)) #event-centric data. adding ball meta-data.
+        self.ball_collision["paddle_left_impacts"].append((time - self.start_time, location, velocity, angle, paddle_left, paddle_right, collision_percentile, None)) #event-centric data. adding ball meta-data.
         #? self.paddleA["paddle_left_loc"].append((time - self.start_time, location))
         self._pad_rest() # _pad_rest() helps avoid a lot of extra mathy bits.
     def paddle_right(self, time, location, velocity, angle, paddle_left, paddle_right, collision_percentile):
@@ -67,6 +69,9 @@ class dataTracker():
     def sync_pulse(self, time, location, velocity, angle, paddle_left, paddle_right, sync_count):
         self.ball_collision["sync_pulse"].append((time - self.start_time, location, velocity, angle, paddle_left, paddle_right, None, sync_count))
         self._pad_rest()
+    def serve_event(self, time, location, velocity, angle, paddle_left, paddle_right):
+        self.ball_collision["serve_event"].append((time - self.start_time, location, velocity, angle, paddle_left, paddle_right, None, None))
+        self._pad_rest()   
 
     def finalize(self):
         # write out all data to .csv
@@ -77,7 +82,7 @@ class dataTracker():
         # with open('data.csv', 'a') as csvfile: #if data.csv exists in the folder, this will append data to the end of it.
         with open("pongdata_" + time.strftime("%Y%m%d-%H%M%S") + '.csv', 'w') as csvfile:
             field_names = ['paddleA_time', 'paddleB_time', 'Left_time', 'Right_time', 'Top_time', 'Bottom_time', \
-                'Pause_time', 'Sync_time', 'impact_x', 'impact_y', 'ball_speed', 'ball_post_bounce_angle', 'paddle_left_y', \
+                'Pause_time', 'Sync_time', 'Serve_time', 'impact_x', 'impact_y', 'ball_speed', 'ball_post_bounce_angle', 'paddle_left_y', \
                 'paddle_right_y', 'collision_percentile', 'sync_count'] 
             #accounts for all variables, you need to update this list if you add more variables to measure, and ALSO need to update in main.
             writer = csv.DictWriter(csvfile, fieldnames=field_names, lineterminator='\n') #write out/creates the csv file. 
