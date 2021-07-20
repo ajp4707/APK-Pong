@@ -4,16 +4,14 @@
 # wait for joystick
 
 import pygame
-import os, sys
-from time import time, sleep  #time resolution is pretty high, not sure how high though
-
-sys.path.append(".")
+import os
+from time import time #time resolution is pretty high, not sure how high though
 
 from src.paddle import PaddleLeft, PaddleRight
 from src.ball import Ball
 from src.data_tracker import dataTracker #additional item/function added to track all relevant information during game.
 from src.game_tracker import GameTracker
-# from src.shadow import Shadow
+from src.shadow import Shadow
 
 from src.config import *
 
@@ -96,13 +94,37 @@ class MainWindow:
             pygame.display.flip()
             tick = tick + 1
             self.clock.tick(FPS)  
+
+    def firstServePage(self, ball):
+        font = pygame.font.SysFont(pygame.font.get_default_font(),int(SIZE[1]/10.))
+        loop = True
+        tick = 0
+        infoTxt = ""
+        if ball.leftServe:
+            infoTxt = "Left serves first"
+        else:
+            infoTxt = "Right serves first"
+        while loop:
+            for event in pygame.event.get(): 
+                if event.type == pygame.QUIT: 
+                      self.nextPage = False
+                      loop = False
+            self.screen.fill(BLACK)
+            if tick >= (3) * FPS:
+                loop = False
+                break
+            text = font.render(infoTxt, True, WHITE)
+
+            textrect = text.get_rect()
+            textrect.center = (SIZE[0]//2,SIZE[1]//2)
+            self.screen.blit(text, textrect)
+            pygame.display.flip()
+            tick = tick + 1
+            self.clock.tick(FPS)  
+
     def gamePage(self):
         self.scoreA = 0
         self.scoreB = 0
-
-        tracker = dataTracker(time())
-        game_tracker = GameTracker(time())
-        endTime = time() + MAXTIME # can update in seconds of time (just over 3 minutes)
         
         # -- sync signal
         syncCount = 0
@@ -111,33 +133,46 @@ class MainWindow:
         paddleA = PaddleLeft(WHITE, PADW, PADH, SIZE)
         paddleB = PaddleRight(WHITE, PADW, PADH, SIZE)
         ball = Ball(WHITE, BALLW, BALLH)
-        ball.returnToCenter(SIZE)
 
         all_sprites_list = pygame.sprite.Group()
         all_sprites_list.add(paddleA)
         all_sprites_list.add(paddleB)
         all_sprites_list.add(ball)
 
-        ## -- shadow sprites to optimize game performance. They cover up previous sprite locations
-        #shadow_sprites_list = pygame.sprite.Group()
-        #shadow_sprites_list.add(Shadow(paddleA))
-        #shadow_sprites_list.add(Shadow(paddleB))
-        #shadow_sprites_list.add(Shadow(ball))
-        #shadowSurf = pygame.Surface((625, 60))
-        #shadowSurf.fill((BLACK))
+        # -- shadow sprites to optimize game performance. They cover up previous sprite locations
+        shadow_sprites_list = pygame.sprite.Group()
+        shadow_sprites_list.add(Shadow(paddleA))
+        shadow_sprites_list.add(Shadow(paddleB))
+        shadow_sprites_list.add(Shadow(ball))
+        shadowSurf = pygame.Surface((625, 60))
+        shadowSurf.fill((BLACK))
+        
+        # -- Display who is serving first
+        self.firstServePage(ball)
+        if not self.nextPage:
+            return
 
         font = pygame.font.Font(None, 87)
 
-        # -- Main game loop
+        # -- Loop variables
         loop = True
         paused = False
         scoreEvent = True
         scorePause = False
+        serveEvent = False
         servePause = True
-        leftServe = True
         tick = 0
-        round = 0
+        self.round = 0
         winByTwo = False
+
+        ball.returnToCenter(SIZE)
+
+        # -- Initialize trackers 
+        tracker = dataTracker(time())
+        game_tracker = GameTracker(time())
+        endTime = time() + MAXTIME # can update in seconds of time (just over 3 minutes)
+
+        # -- Main game loop
         while loop:
             if TIMELIMIT and time() > endTime:
                 loop = False
@@ -149,12 +184,19 @@ class MainWindow:
                 elif event.type==pygame.KEYDOWN:
                         if event.key==pygame.K_v: # Pressing the v Key will quit the game
                              loop=False
-                        elif event.key == pygame.K_b: # Pressing b will pause the game
+                        elif event.key == pygame.K_p: # Pressing p will pause the game
                             tracker.pause_toggle(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
                             paused = not paused
-                        elif event.key == pygame.K_RETURN: # Sync signal event will go here. For now, return
+                        elif event.key == pygame.K_F1: # Sync signal event will go here. For now, K_F1
                             syncCount += 1
                             tracker.sync_pulse(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y, syncCount)
+                elif event.type == pygame.JOYBUTTONDOWN and servePause:
+                    if self.joys[0].get_button(0) is 1 and ball.leftServe:
+                        ball.serve(paddleA)
+                        serveEvent = True
+                    elif self.joys[1].get_button(0) is 1 and not ball.leftServe:
+                        ball.serve(paddleB)
+                        serveEvent = True
             # record the continuous game data into a different csv
             game_tracker.add_row(paddleA.rect.y, paddleB.rect.y, ball.x, ball.y, ball.angle, ball.velocity, syncCount) 
 
@@ -164,17 +206,15 @@ class MainWindow:
             if scoreEvent:
                 if scorePause: # pauses the screen immediately after the serve
                     tick = tick + 1
+                    ball.velocity = 0
                     if tick >= FPS * PAUSELENGTH:
                         tick = 0
                         scorePause = False
                         servePause = True
                         ball.returnToCenter(SIZE)
+                        tracker.ball_reset(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
                     self.clock.tick(FPS)
                     continue
-    
-                if round >= SWITCHROUNDS: # alternates who serves every SWITCHROUNDS rounds
-                    leftServe = not leftServe
-                    round = 0
 
                 if (self.scoreA >= WINSCORE or self.scoreB >= WINSCORE):
                     if abs(self.scoreA-self.scoreB) < 2:   # win by 2 condition
@@ -182,16 +222,12 @@ class MainWindow:
                     else:
                         loop = False
     
-                if servePause:
-                    ball.velocity = 0
-                    tick = tick + 1
-                    if tick >= FPS * PAUSELENGTH:
-                        ball.resetSpeed()
-                        ball.serve(leftServe)
-                        tick = 0
-                        tracker.serve_event(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
-                        scoreEvent = servePause = False
-                        winByTwo = False
+                if serveEvent:
+                    tracker.serve_event(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
+                    scoreEvent = servePause = serveEvent = False
+                    winByTwo = False
+                    self.screen.fill(BLACK)
+
             keys = pygame.key.get_pressed()
             paddleA.adjustJoystick(self.joys[0].get_axis(0), SCREENH)
             paddleB.adjustJoystick(self.joys[1].get_axis(0), SCREENH)
@@ -205,15 +241,15 @@ class MainWindow:
                 if not pygame.sprite.collide_mask(ball, paddleB): #and also is not hitting the paddle
                     scoreEvent = scorePause = True
                     self.scoreA += 1
-                    round += 1
+                    self.updateRound(ball)
                     ball.rect.x = SCREENW-BALLW
                     ball.collideVertical()
                     tracker.wall_right(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
-            if ball.rect.x <= 0: # Lside of screen
+            elif ball.rect.x <= 0: # Lside of screen
                 if not pygame.sprite.collide_mask(ball, paddleA):
                     scoreEvent = scorePause = True
                     self.scoreB += 1
-                    round += 1
+                    self.updateRound(ball)
                     ball.rect.x = 0
                     ball.collideVertical()
                     tracker.wall_left(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
@@ -224,7 +260,7 @@ class MainWindow:
                 # ball.speedUpCondition() # place here to include in bounce count
                 # tracker.wall_top(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
                 tracker.wall_bottom(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
-            if ball.rect.y <= 0: #top of screen is hit
+            elif ball.rect.y <= 0: #top of screen is hit
                 ball.rect.y = 0
                 ball.collideHorizontal()
                 # ball.speedUpCondition() # place here to include in bounce count
@@ -236,26 +272,26 @@ class MainWindow:
                 ball.speedUpCondition()  # detect collisions for counter
                 collision_percentile = ball.bounce(paddleA)
                 #ball.rect.x = 18  # keep from getting stuck on the paddle
-                ball.rect.x = PADW + 3
+                ball.rect.x = PADW + 1
                 # ball.collision_percentile(paddleA)
                 tracker.paddle_left(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y, collision_percentile)
-            if pygame.sprite.collide_mask(ball, paddleB):
+            elif pygame.sprite.collide_mask(ball, paddleB):
                 ball.speedUpCondition()  # detecting collisions for counter
                 collision_percentile = ball.bounce(paddleB)
                 # ball.rect.x = 1017  # prevent sticking to paddleB
-                ball.rect.x = SCREENW - PADW - BALLW - 3
+                ball.rect.x = SCREENW - PADW - BALLW - 1
                 # ball.collision_percentile(paddleB)
                 tracker.paddle_right(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y, collision_percentile) #or 
             
-            ## shadows update after their counterparts
-            #shadow_sprites_list.update()
+            # shadows update after their counterparts
+            shadow_sprites_list.update()
 
             # --- Drawing 
 
             # Clear the screen
-            self.screen.fill(BLACK)
-            # shadow_sprites_list.draw(self.screen)
-            # self.screen.blit(shadowSurf, (263, 10))
+            #self.screen.fill(BLACK)
+            shadow_sprites_list.draw(self.screen)   # clears old paddles and ball
+            self.screen.blit(shadowSurf, (263, 10)) # clears old score
             
             # Draw the net and sprites
             pygame.draw.line(self.screen, GRAY, [SCREENW//2, 0], [SCREENW//2, SCREENH], 13)
@@ -283,6 +319,12 @@ class MainWindow:
             self.clock.tick(FPS)
 
         tracker.finalize()  
+
+    def updateRound(self, ball):
+        self.round += 1
+        if self.round >= SWITCHROUNDS:
+            ball.serveToggle()
+            self.round = 0
 
     def scorePage(self):
         loop = True
@@ -312,6 +354,7 @@ class MainWindow:
             self.screen.blit(text, (2 * SCREENW//3 - text.get_width()//2, 2 * SCREENH//3))
             pygame.display.flip()
             self.clock.tick(FPS)
+
 
 # game = MainWindow()
 
