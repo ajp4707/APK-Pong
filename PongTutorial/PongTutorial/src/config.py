@@ -7,8 +7,8 @@ GRAY = (150, 150, 150)
 SCREENW = 1050  # In pixels
 SCREENH = 750  
 FPS = 60        # FPS for the game
-WINSCORE = 21
-SWITCHROUNDS = 5    # switch serves after how many rounds
+WINSCORE = 50
+SWITCHROUNDS = 1    # switch serves after how many rounds
 TIMELIMIT = True   
 MAXTIME = 120 # Only applied when TIMELIMIT = true
 
