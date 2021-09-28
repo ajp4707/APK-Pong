@@ -47,11 +47,11 @@ SIZE = (SCREENW, SCREENH)
 ### Debug Constants for ease of access
 ### Comment out below when running for real
 #WINSCORE = 10
-SWITCHROUNDS = 2    # switch serves after how many rounds
+#SWITCHROUNDS = 2    # switch serves after how many rounds
 #TIMELIMIT = False   
 #MAXTIME = 185   # Only applied when TIMELIMIT = true
 
 ## Minor adjustments
 #PAUSELENGTH = 1.5   # Seconds to pause after score, and before serve
-COUNTFROM = 0      # Seconds of countdown before starting game
-TEXTPAUSELENGTH = 0.5
+#COUNTFROM = 0      # Seconds of countdown before starting game
+#TEXTPAUSELENGTH = 0.5
