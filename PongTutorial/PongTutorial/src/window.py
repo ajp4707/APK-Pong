@@ -96,6 +96,7 @@ class MainWindow:
             self.clock.tick(FPS)  
 
     def firstServePage(self, ball):
+        self.screen.fill(BLACK)
         font = pygame.font.SysFont(pygame.font.get_default_font(),int(SIZE[1]/10.))
         loop = True
         tick = 0
@@ -187,11 +188,11 @@ class MainWindow:
                         if event.key==pygame.K_v: # Pressing the v Key will quit the game
                              loop=False
                         elif event.key == pygame.K_p: # Pressing p will pause the game
-                            tracker.pause_toggle(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
+                            #tracker.pause_toggle(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
                             paused = not paused
                         elif event.key == pygame.K_F1: # Sync signal event will go here. For now, K_F1
                             syncCount += 1
-                            tracker.sync_pulse(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y, syncCount)
+                            #tracker.sync_pulse(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y, syncCount)
                 elif event.type == pygame.JOYBUTTONDOWN and servePause:
                     if self.joys[0].get_button(0) is 1 and ball.leftServe:
                         y = paddleA.rect.centery
@@ -229,7 +230,7 @@ class MainWindow:
                         scorePause = False
                         servePause = True
                         ball.returnToCenter(SIZE)
-                        tracker.ball_reset(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
+                        #tracker.ball_reset(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
                     self.clock.tick(FPS)
                     continue
 
@@ -243,7 +244,7 @@ class MainWindow:
                     ball.followPaddle(paddleA, paddleB)
     
                 if serveEvent:
-                    tracker.serve_event(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
+                    #tracker.serve_event(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
                     scoreEvent = servePause = serveEvent = False
                     winByTwo = False
                     self.screen.fill(BLACK)
@@ -334,16 +335,10 @@ class MainWindow:
                     text = font.render("Spin your joystick to move your paddle", True, WHITE)
                 elif tutTick <= 16 * FPS:
                     text = font.render("You can aim your serve with the position of your paddle", True, WHITE)
-                elif servePause:
-                    if tutTick >= 25 and tutTick <= 40:
-                        text = font.render("The server alternates every 5 rounds", True, WHITE)
-                    else: 
-                        tutTick -= 1
-                        if ball.leftServe:
-                           infoTxt = "Left, press your button to serve"
-                        else:
-                            infoTxt = "Right, press your button to serve"
-                        text = font.render(infoTxt, True, WHITE)
+                elif tutTick <= 25 * FPS:
+                     text = font.render("When you have the ball, press your button to serve", True, WHITE)
+                elif tutTick <= 32 * FPS:
+                     text = font.render("The server alternates every 5 rounds in the actual game", True, WHITE)
                 else:
                     text = font.render("", True, WHITE)
 
