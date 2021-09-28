@@ -96,6 +96,7 @@ class MainWindow:
             self.clock.tick(FPS)  
 
     def firstServePage(self, ball):
+        self.screen.fill(BLACK)
         font = pygame.font.SysFont(pygame.font.get_default_font(),int(SIZE[1]/10.))
         loop = True
         tick = 0
@@ -110,7 +111,7 @@ class MainWindow:
                       self.nextPage = False
                       loop = False
             self.screen.fill(BLACK)
-            if tick >= (3) * FPS:
+            if tick >= (TEXTPAUSELENGTH) * FPS:
                 loop = False
                 break
             text = font.render(infoTxt, True, WHITE)
@@ -194,17 +195,32 @@ class MainWindow:
                             #tracker.sync_pulse(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y, syncCount)
                 elif event.type == pygame.JOYBUTTONDOWN and servePause:
                     if self.joys[0].get_button(0) is 1 and ball.leftServe:
-                        ball.serve(paddleA)
-                        serveEvent = True
+                        y = paddleA.rect.centery
+                        mid = SCREENH//2
+                        if SERVETYPE == ServeType.TWOSTEP and twoStepFollow:
+                            twoStepFollow = False
+                        elif SERVETYPE != ServeType.WITHINBOUND or (SERVETYPE == ServeType.WITHINBOUND and y < mid + BOUNDRADIUS and y > mid - BOUNDRADIUS):
+                            ball.serve(paddleA)
+                            serveEvent = True
                     elif self.joys[1].get_button(0) is 1 and not ball.leftServe:
-                        ball.serve(paddleB)
-                        serveEvent = True
+                        y = paddleB.rect.centery
+                        mid = SCREENH//2
+                        if SERVETYPE == ServeType.TWOSTEP and twoStepFollow:
+                            twoStepFollow = False
+                        elif SERVETYPE != ServeType.WITHINBOUND or (SERVETYPE == ServeType.WITHINBOUND and y < mid + BOUNDRADIUS and y > mid - BOUNDRADIUS):
+                            ball.serve(paddleB)
+                            serveEvent = True
             ## record the continuous game data into a different csv
             #game_tracker.add_row(paddleA.rect.y, paddleB.rect.y, ball.x, ball.y, ball.angle, ball.velocity, syncCount) 
 
             if paused: # allows us to pause the game using p key.
                 self.clock.tick(FPS)
                 continue
+
+            keys = pygame.key.get_pressed()
+            paddleA.adjustJoystick(self.joys[0].get_axis(0), SCREENH)
+            paddleB.adjustJoystick(self.joys[1].get_axis(0), SCREENH)
+
             if scoreEvent:
                 if scorePause: # pauses the screen immediately after the serve
                     tick = tick + 1
@@ -219,20 +235,19 @@ class MainWindow:
                     continue
 
                 if (self.scoreA >= WINSCORE or self.scoreB >= WINSCORE):
-                    #if abs(self.scoreA-self.scoreB) < 2:   # win by 2 condition
-                    #    winByTwo = True
-                    #else:
+                    if abs(self.scoreA-self.scoreB) < 2:   # win by 2 condition
+                        winByTwo = True
+                    else:
                         loop = False
+
+                if (SERVETYPE == ServeType.STRAIGHT or SERVETYPE == ServeType.TOWARDCENTER or (SERVETYPE == ServeType.TWOSTEP and twoStepFollow)) and servePause:
+                    ball.followPaddle(paddleA, paddleB)
     
                 if serveEvent:
                     #tracker.serve_event(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
                     scoreEvent = servePause = serveEvent = False
-                    #winByTwo = False
+                    winByTwo = False
                     self.screen.fill(BLACK)
-
-            keys = pygame.key.get_pressed()
-            paddleA.adjustJoystick(self.joys[0].get_axis(0), SCREENH)
-            paddleB.adjustJoystick(self.joys[1].get_axis(0), SCREENH)
 
             # --- Game logic
             all_sprites_list.update()
@@ -320,16 +335,10 @@ class MainWindow:
                     text = font.render("Spin your joystick to move your paddle", True, WHITE)
                 elif tutTick <= 16 * FPS:
                     text = font.render("You can aim your serve with the position of your paddle", True, WHITE)
-                elif servePause:
-                    if tutTick >= 25 and tutTick <= 40:
-                        text = font.render("The server alternates every 5 rounds", True, WHITE)
-                    else: 
-                        tutTick -= 1
-                        if ball.leftServe:
-                           infoTxt = "Left, press your button to serve"
-                        else:
-                            infoTxt = "Right, press your button to serve"
-                        text = font.render(infoTxt, True, WHITE)
+                elif tutTick <= 25 * FPS:
+                     text = font.render("When you have the ball, press your button to serve", True, WHITE)
+                elif tutTick <= 32 * FPS:
+                     text = font.render("The server alternates every 5 rounds in the actual game", True, WHITE)
                 else:
                     text = font.render("", True, WHITE)
 

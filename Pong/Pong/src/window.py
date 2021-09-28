@@ -304,16 +304,27 @@ class MainWindow:
             # --- Drawing 
 
             # Clear the screen
-            #self.screen.fill(BLACK)
+            self.screen.fill(BLACK)
             shadow_sprites_list.draw(self.screen)   # clears old paddles and ball
             self.screen.blit(shadowSurf, (263, 10)) # clears old score
             
             # Draw the net and sprites
-            if servePause and SERVETYPE == ServeType.WITHINBOUND:
-                pygame.draw.line(self.screen, MUTEDGRAY, [0, SCREENH//2 + BOUNDRADIUS + PADH//2], [SCREENW, SCREENH//2 + BOUNDRADIUS + PADH//2], 4)
-                pygame.draw.line(self.screen, MUTEDGRAY, [0, SCREENH//2 - BOUNDRADIUS - PADH//2], [SCREENW, SCREENH//2 - BOUNDRADIUS - PADH//2], 4)
+            #if servePause and SERVETYPE == ServeType.WITHINBOUND:
+            #    pygame.draw.line(self.screen, MUTEDGRAY, [0, SCREENH//2 + BOUNDRADIUS + PADH//2], [SCREENW, SCREENH//2 + BOUNDRADIUS + PADH//2], 4)
+            #    pygame.draw.line(self.screen, MUTEDGRAY, [0, SCREENH//2 - BOUNDRADIUS - PADH//2], [SCREENW, SCREENH//2 - BOUNDRADIUS - PADH//2], 4)
+            #if servePause and SERVETYPE == ServeType.TOWARDCENTER:
+            #    scrCx = SCREENW // 2
+            #    scrCy = SCREENH // 2
+
+            #    begx = ball.rect.centerx
+            #    endx = begx + (scrCx - begx)/7
+            #    begy = ball.rect.centery
+            #    endy = begy - (begy - scrCy)/7
+            #    pygame.draw.line(self.screen, GRAY, [begx, begy], [endx, endy], 3)
             pygame.draw.line(self.screen, GRAY, [SCREENW//2, 0], [SCREENW//2, SCREENH], 13)
             all_sprites_list.draw(self.screen)
+
+           
 
             #Display scores: COMPETITIVE
             text = font.render(str(self.scoreA), 1, WHITE)
