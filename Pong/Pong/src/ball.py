@@ -76,7 +76,7 @@ class Ball(pygame.sprite.Sprite):
         """
         # return  # XXX: remove this line to add speed back
         self.speedUpCtr -= 1
-        if self.speedUpCtr is 0:
+        if self.speedUpCtr == 0:
             # Adjust Speed!
             # number of paddle hits or collisions before speed increases the next time
             self.speedUpCtr = SPEEDUPCTR  # resets counter back to 4
@@ -133,7 +133,7 @@ class Ball(pygame.sprite.Sprite):
         else:
             randomness = randint(-5,5)
         
-        if paddle.rect.x is 0:
+        if paddle.rect.x == 0:
             # collided with paddle A
             self.angle = (BOUNCE_RANGE * collision_percentile - BOUNCE_RANGE/2 + randomness) % 360   # --> wrong command? 
         else:
