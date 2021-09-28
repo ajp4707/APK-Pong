@@ -1,7 +1,7 @@
 import pygame
 from random import randint, choice
-from math import sin, cos, radians
-from src.config import VELOCITYMIN, VELOCITYMAX, BLACK, SPEEDUPCTR
+from math import sin, cos, radians, atan2, degrees, tan
+from src.config import VELOCITYMIN, VELOCITYMAX, BLACK, SPEEDUPCTR, SERVETYPE, ServeType, SCREENW, SCREENH, BOUNDRADIUS
 
 #SPEEDUPCTR = 4  # starting counter; number of paddle hits or collisions before speed increases
 
@@ -149,21 +149,6 @@ class Ball(pygame.sprite.Sprite):
     #def startAngle(self):
     #    return choice(POSSIBLE_STARTING_ANGLES)
 
-    ## -- Old serve function. Sets the angle of the ball to inital serve position. Called by main. 
-    #def serve(self):
-    #    if self.leftServe:
-    #        self.angle = choice(POSSIBLE_STARTING_ANGLES[0:3])
-    #    else:
-    #        self.angle = choice(POSSIBLE_STARTING_ANGLES[3:])
-    def serve(self, paddle):
-        self.resetSpeed()
-        percent = paddle.getservePercent()
-        if self.leftServe: 
-            self.angle = -(paddle.getservePercent() - 0.5) * BOUNCE_RANGE
-        else:
-            self.angle = 180 + (paddle.getservePercent() - 0.5) * BOUNCE_RANGE
-        self.updateDirection()
-
     def serveToggle(self):
         self.leftServe = not self.leftServe
 
@@ -176,9 +161,81 @@ class Ball(pygame.sprite.Sprite):
     def returnToCenter(self, sizeTuple):
         width, height = sizeTuple
         if self.leftServe:
-            self.rect.centerx = width // 4
+            self.rect.centerx = 40
         else:
-            self.rect.centerx = width // 4 * 3
+            self.rect.centerx = width - 40
         self.rect.centery = height // 2
         self.velocity = 0
         self.updateDirection()
+
+    ## -- Old serve function. Sets the angle of the ball to inital serve position. Called by main. 
+    #def serve(self):
+    #    if self.leftServe:
+    #        self.angle = choice(POSSIBLE_STARTING_ANGLES[0:3])
+    #    else:
+    #        self.angle = choice(POSSIBLE_STARTING_ANGLES[3:])
+    #def serve(self, paddle):
+    #    self.resetSpeed()
+    #    percent = paddle.getservePercent()
+    #    if self.leftServe: 
+    #        self.angle = -(paddle.getservePercent() - 0.5) * BOUNCE_RANGE
+    #    else:
+    #        self.angle = 180 + (paddle.getservePercent() - 0.5) * BOUNCE_RANGE
+    #    self.updateDirection()
+    def serve(self, paddle):
+        if SERVETYPE == ServeType.STRAIGHT:
+            self.serveStraight(paddle)
+        elif SERVETYPE == ServeType.TOWARDCENTER:
+            self.serveTowardCenter(paddle)
+        elif SERVETYPE == ServeType.WITHINBOUND:
+            self.serveWithinBound(paddle)
+        elif SERVETYPE == ServeType.TWOSTEP:
+            self.serveTwoStep(paddle)
+
+    def serveStraight(self, paddle):
+        self.resetSpeed()
+        if self.leftServe:
+            self.angle = 0
+        else:
+            self.angle = 180
+        self.updateDirection()
+
+    def serveTowardCenter(self, paddle):
+        self.resetSpeed()
+        xdiff = SCREENW/2 - self.rect.centerx
+        ydiff = SCREENH/2 - self.rect.centery
+        self.angle = degrees(atan2(ydiff, xdiff))
+        self.updateDirection()
+
+    def serveWithinBound(self, paddle):
+        self.resetSpeed()
+        maxSlope = tan(radians(BOUNCE_RANGE/2))
+        ydiff = SCREENH/2 - paddle.rect.centery
+        slope = ydiff/BOUNDRADIUS * maxSlope
+        if self.leftServe:
+            self.angle = degrees(atan2(slope, 1))
+        else:
+            self.angle = degrees(atan2(slope, -1))
+        self.updateDirection()
+
+    def serveTwoStep(self, paddle):
+        self.resetSpeed()
+        maxSlope = tan(radians(BOUNCE_RANGE/2))
+        ydiff = self.rect.centery - paddle.rect.centery
+        xdiff = self.rect.centerx - paddle.rect.centerx
+        slope = ydiff/xdiff
+        if slope > maxSlope:
+            slope = maxSlope
+        elif slope < -maxSlope:
+            slope = -maxSlope
+        if self.leftServe:
+            self.angle = degrees(atan2(slope, 1))
+        else:
+            self.angle = degrees(atan2(-slope, -1))
+        self.updateDirection()
+
+    def followPaddle(self, paddleA, paddleB):
+        if self.leftServe:
+            self.rect.centery = paddleA.rect.centery
+        else: 
+            self.rect.centery = paddleB.rect.centery

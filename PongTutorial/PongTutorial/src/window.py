@@ -110,7 +110,7 @@ class MainWindow:
                       self.nextPage = False
                       loop = False
             self.screen.fill(BLACK)
-            if tick >= (3) * FPS:
+            if tick >= (TEXTPAUSELENGTH) * FPS:
                 loop = False
                 break
             text = font.render(infoTxt, True, WHITE)
@@ -187,24 +187,39 @@ class MainWindow:
                         if event.key==pygame.K_v: # Pressing the v Key will quit the game
                              loop=False
                         elif event.key == pygame.K_p: # Pressing p will pause the game
-                            #tracker.pause_toggle(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
+                            tracker.pause_toggle(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
                             paused = not paused
                         elif event.key == pygame.K_F1: # Sync signal event will go here. For now, K_F1
                             syncCount += 1
-                            #tracker.sync_pulse(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y, syncCount)
+                            tracker.sync_pulse(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y, syncCount)
                 elif event.type == pygame.JOYBUTTONDOWN and servePause:
                     if self.joys[0].get_button(0) is 1 and ball.leftServe:
-                        ball.serve(paddleA)
-                        serveEvent = True
+                        y = paddleA.rect.centery
+                        mid = SCREENH//2
+                        if SERVETYPE == ServeType.TWOSTEP and twoStepFollow:
+                            twoStepFollow = False
+                        elif SERVETYPE != ServeType.WITHINBOUND or (SERVETYPE == ServeType.WITHINBOUND and y < mid + BOUNDRADIUS and y > mid - BOUNDRADIUS):
+                            ball.serve(paddleA)
+                            serveEvent = True
                     elif self.joys[1].get_button(0) is 1 and not ball.leftServe:
-                        ball.serve(paddleB)
-                        serveEvent = True
+                        y = paddleB.rect.centery
+                        mid = SCREENH//2
+                        if SERVETYPE == ServeType.TWOSTEP and twoStepFollow:
+                            twoStepFollow = False
+                        elif SERVETYPE != ServeType.WITHINBOUND or (SERVETYPE == ServeType.WITHINBOUND and y < mid + BOUNDRADIUS and y > mid - BOUNDRADIUS):
+                            ball.serve(paddleB)
+                            serveEvent = True
             ## record the continuous game data into a different csv
             #game_tracker.add_row(paddleA.rect.y, paddleB.rect.y, ball.x, ball.y, ball.angle, ball.velocity, syncCount) 
 
             if paused: # allows us to pause the game using p key.
                 self.clock.tick(FPS)
                 continue
+
+            keys = pygame.key.get_pressed()
+            paddleA.adjustJoystick(self.joys[0].get_axis(0), SCREENH)
+            paddleB.adjustJoystick(self.joys[1].get_axis(0), SCREENH)
+
             if scoreEvent:
                 if scorePause: # pauses the screen immediately after the serve
                     tick = tick + 1
@@ -214,25 +229,24 @@ class MainWindow:
                         scorePause = False
                         servePause = True
                         ball.returnToCenter(SIZE)
-                        #tracker.ball_reset(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
+                        tracker.ball_reset(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
                     self.clock.tick(FPS)
                     continue
 
                 if (self.scoreA >= WINSCORE or self.scoreB >= WINSCORE):
-                    #if abs(self.scoreA-self.scoreB) < 2:   # win by 2 condition
-                    #    winByTwo = True
-                    #else:
+                    if abs(self.scoreA-self.scoreB) < 2:   # win by 2 condition
+                        winByTwo = True
+                    else:
                         loop = False
+
+                if (SERVETYPE == ServeType.STRAIGHT or SERVETYPE == ServeType.TOWARDCENTER or (SERVETYPE == ServeType.TWOSTEP and twoStepFollow)) and servePause:
+                    ball.followPaddle(paddleA, paddleB)
     
                 if serveEvent:
-                    #tracker.serve_event(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
+                    tracker.serve_event(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y)
                     scoreEvent = servePause = serveEvent = False
-                    #winByTwo = False
+                    winByTwo = False
                     self.screen.fill(BLACK)
-
-            keys = pygame.key.get_pressed()
-            paddleA.adjustJoystick(self.joys[0].get_axis(0), SCREENH)
-            paddleB.adjustJoystick(self.joys[1].get_axis(0), SCREENH)
 
             # --- Game logic
             all_sprites_list.update()
