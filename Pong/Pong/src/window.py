@@ -33,8 +33,10 @@ class MainWindow:
         self.clock = pygame.time.Clock()
         self.joys = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
         self.joys = list(filter(lambda j: 'paddle' in j.get_name().lower(), self.joys))
+        self.joystickMode = True;
         if len(self.joys) < 2:
-            raise IndexError("IndexError. Please connect joysticks.")
+            self.joystickMode = False;
+            print("Warning! You are in anti-joysticks mode. No joysticks were connected.")
         for j in self.joys:
             j.init()
 
@@ -169,6 +171,7 @@ class MainWindow:
         ball.returnToCenter(SIZE)
 
         # -- Initialize trackers 
+        start_time = time();
         tracker = dataTracker(time())
         game_tracker = GameTracker(time())
         endTime = time() + MAXTIME # can update in seconds of time (just over 3 minutes)
@@ -216,8 +219,10 @@ class MainWindow:
                 continue
 
             keys = pygame.key.get_pressed()
-            paddleA.adjustJoystick(self.joys[0].get_axis(0), SCREENH)
-            paddleB.adjustJoystick(self.joys[1].get_axis(0), SCREENH)
+
+            if self.joystickMode:
+                paddleA.adjustJoystick(self.joys[0].get_axis(0), SCREENH)
+                paddleB.adjustJoystick(self.joys[1].get_axis(0), SCREENH)
 
             if scoreEvent:
                 if scorePause: # pauses the screen immediately after the serve

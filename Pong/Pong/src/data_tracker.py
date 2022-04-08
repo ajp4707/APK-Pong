@@ -1,10 +1,14 @@
 import csv
 import time
+from datetime import datetime
 
 ### needs to be updated to (maybe) include synch events
 class dataTracker():
     def __init__(self, t):
         # (time, (impact_x, impact_y), ball.velocity, ball.angle) #these are the events, we need the meta-data related to the events. 
+        start_dt = datetime.now()
+        self.file_start_str = start_dt.strftime("%Y-%m-%d-%H-%M-%S")
+        
         self.ball_collision = {
             "paddle_left_impacts":[],
             "paddle_right_impacts":[],
@@ -85,7 +89,7 @@ class dataTracker():
         # event_timestamp_col1, event_col2, event_col3, ..., event_coln, impact_x, impact_y #
         #####################################################################################
         # with open('data.csv', 'a') as csvfile: #if data.csv exists in the folder, this will append data to the end of it.
-        with open("pongdata_" + time.strftime("%Y%m%d-%H%M%S") + '.csv', 'w') as csvfile:
+        with open("pongdata_" + self.file_start_str + '.csv', 'w') as csvfile:
             field_names = ['paddleA_time', 'paddleB_time', 'Left_time', 'Right_time', 'Top_time', 'Bottom_time', \
                 'Pause_time', 'Ball_reset_time', 'Serve_time', 'Sync_time',  'impact_x', 'impact_y', 'ball_speed', 'ball_post_bounce_angle', 'paddle_left_y', \
                 'paddle_right_y', 'collision_percentile', 'sync_count'] 
