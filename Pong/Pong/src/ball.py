@@ -204,7 +204,7 @@ class Ball(pygame.sprite.Sprite):
         self.resetSpeed()
         xdiff = SCREENW/2 - self.rect.centerx
         ydiff = SCREENH/2 - self.rect.centery
-        self.angle = degrees(atan2(ydiff, xdiff))
+        self.angle = degrees(atan2(ydiff, xdiff)) % 360
         self.updateDirection()
 
     def serveWithinBound(self, paddle):
@@ -213,9 +213,9 @@ class Ball(pygame.sprite.Sprite):
         ydiff = SCREENH/2 - paddle.rect.centery
         slope = ydiff/BOUNDRADIUS * maxSlope
         if self.leftServe:
-            self.angle = degrees(atan2(slope, 1))
+            self.angle = degrees(atan2(slope, 1)) % 360
         else:
-            self.angle = degrees(atan2(slope, -1))
+            self.angle = degrees(atan2(slope, -1)) % 360
         self.updateDirection()
 
     def serveTwoStep(self, paddle):
@@ -229,9 +229,9 @@ class Ball(pygame.sprite.Sprite):
         elif slope < -maxSlope:
             slope = -maxSlope
         if self.leftServe:
-            self.angle = degrees(atan2(slope, 1))
+            self.angle = degrees(atan2(slope, 1)) % 360
         else:
-            self.angle = degrees(atan2(-slope, -1))
+            self.angle = degrees(atan2(-slope, -1)) % 360
         self.updateDirection()
 
     def followPaddle(self, paddleA, paddleB):
