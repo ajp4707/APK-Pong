@@ -65,7 +65,7 @@ class MainWindow:
                     self.nextPage = False
                     loop = False
                 if event.type == pygame.JOYBUTTONDOWN:
-                    if self.joys[0].get_button(0) is 1 and self.joys[1].get_button(0) is 1:
+                    if self.joys[0].get_button(0) == 1 and self.joys[1].get_button(0) == 1:
                         loop = False
                 if event.type == pygame.KEYDOWN: # -- Alternatively, if using keyboard, press "A" and "L" to begin
                     pressed = pygame.key.get_pressed()
@@ -195,7 +195,7 @@ class MainWindow:
                             syncCount += 1
                             tracker.sync_pulse(time(), (ball.x, ball.y), ball.velocity, ball.angle, paddleA.rect.y, paddleB.rect.y, syncCount)
                 elif event.type == pygame.JOYBUTTONDOWN and servePause:
-                    if self.joys[0].get_button(0) is 1 and ball.leftServe:
+                    if self.joys[0].get_button(0) == 1 and ball.leftServe:
                         y = paddleA.rect.centery
                         mid = SCREENH//2
                         if SERVETYPE == ServeType.TWOSTEP and twoStepFollow:
@@ -203,7 +203,7 @@ class MainWindow:
                         elif SERVETYPE != ServeType.WITHINBOUND or (SERVETYPE == ServeType.WITHINBOUND and y < mid + BOUNDRADIUS and y > mid - BOUNDRADIUS):
                             ball.serve(paddleA)
                             serveEvent = True
-                    elif self.joys[1].get_button(0) is 1 and not ball.leftServe:
+                    elif self.joys[1].get_button(0) == 1 and not ball.leftServe:
                         y = paddleB.rect.centery
                         mid = SCREENH//2
                         if SERVETYPE == ServeType.TWOSTEP and twoStepFollow:
